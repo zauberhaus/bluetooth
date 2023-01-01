@@ -1,4 +1,4 @@
-module zauberhaus/bluetooth
+module github.com/zauberhaus/bluetooth
 
 go 1.15
 

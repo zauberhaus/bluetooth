@@ -1,3 +1,4 @@
+//go:build ignore
 // +build ignore
 
 package main
@@ -12,7 +13,7 @@ import (
 	"text/template"
 	"time"
 
-	"tinygo.org/x/bluetooth"
+	"github.com/zauberhaus/bluetooth"
 )
 
 type Service struct {
