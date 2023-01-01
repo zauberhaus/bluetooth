@@ -126,6 +126,19 @@ func makeScanResult(prph cbgo.Peripheral, advFields cbgo.AdvFields, rssi int) Sc
 		serviceUUIDs = append(serviceUUIDs, parsedUUID)
 	}
 
+	serviceData := make(map[uint16][]byte, len(advFields.ServiceData))
+	for _, u := range advFields.ServiceData {
+		l := len(u.UUID)
+		switch l {
+		case 2:
+			manufacturerID := uint16(u.UUID[0] + (u.UUID[1] << 8))
+			serviceData[manufacturerID] = u.Data
+		case 16:
+			manufacturerID := uint16(u.UUID[12] + (u.UUID[13] << 8))
+			serviceData[manufacturerID] = u.Data
+		}
+	}
+
 	manufacturerData := make(map[uint16][]byte)
 	if len(advFields.ManufacturerData) > 2 {
 		manufacturerID := uint16(advFields.ManufacturerData[0])
@@ -144,6 +157,7 @@ func makeScanResult(prph cbgo.Peripheral, advFields cbgo.AdvFields, rssi int) Sc
 			AdvertisementFields{
 				LocalName:        advFields.LocalName,
 				ServiceUUIDs:     serviceUUIDs,
+				ServiceData:      serviceData,
 				ManufacturerData: manufacturerData,
 			},
 		},

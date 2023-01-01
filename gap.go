@@ -51,6 +51,9 @@ type AdvertisementOptions struct {
 	// 128-bit UUIDs".
 	ServiceUUIDs []UUID
 
+	// ServiceData contains the advertised array of bytes (0x16).
+	ServiceData map[uint16][]byte
+
 	// Interval in BLE-specific units. Create an interval by using NewDuration.
 	Interval Duration
 }
@@ -127,6 +130,10 @@ type AdvertisementPayload interface {
 	// if this data is not available.
 	Bytes() []byte
 
+	// ServiceData returns a map with all the service data present in the
+	//advertising. IT may be empty.
+	ServiceData() map[uint16][]byte
+
 	// ManufacturerData returns a map with all the manufacturer data present in the
 	//advertising. IT may be empty.
 	ManufacturerData() map[uint16][]byte
@@ -142,6 +149,9 @@ type AdvertisementFields struct {
 	// part of the advertisement packet, in data types such as "complete list of
 	// 128-bit UUIDs".
 	ServiceUUIDs []UUID
+
+	// ServiceData is the service data of the advertisement.
+	ServiceData map[uint16][]byte
 
 	// ManufacturerData is the manufacturer data of the advertisement.
 	ManufacturerData map[uint16][]byte
@@ -175,6 +185,10 @@ func (p *advertisementFields) HasServiceUUID(uuid UUID) bool {
 // original raw advertisement data available.
 func (p *advertisementFields) Bytes() []byte {
 	return nil
+}
+
+func (p *advertisementFields) ServiceData() map[uint16][]byte {
+	return p.AdvertisementFields.ServiceData
 }
 
 // ManufacturerData returns the underlying ManufacturerData field.
@@ -270,6 +284,10 @@ func (buf *rawAdvertisementPayload) HasServiceUUID(uuid UUID) bool {
 	}
 }
 
+func (buf *rawAdvertisementPayload) ServiceData() map[UUID][]byte {
+	return nil
+}
+
 // ManufacturerData returns the manufacturer data in the advertisement payload.
 func (buf *rawAdvertisementPayload) ManufacturerData() map[uint16][]byte {
 	mData := make(map[uint16][]byte)
@@ -316,6 +334,13 @@ func (buf *rawAdvertisementPayload) addFromOptions(options AdvertisementOptions)
 			return false
 		}
 	}
+
+	for uuid, data := range options.ServiceData {
+		if !buf.addServiceData(uuid, data) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -375,6 +400,27 @@ func (buf *rawAdvertisementPayload) addServiceUUID(uuid UUID) (ok bool) {
 		buf.len += 18
 		return true
 	}
+}
+
+// addServiceData adds data for a service identified by a 16-bit uuid.
+func (buf *rawAdvertisementPayload) addServiceData(uuid uint16, data []byte) (ok bool) {
+	if int(buf.len)+4+len(data) > len(buf.data) {
+		return false // UUID doesn't fit.
+	}
+
+	l := uint8(len(data))
+
+	buf.data[buf.len+0] = l + 3 // length of field, including type
+	buf.data[buf.len+1] = 0x16  // type, 0x16 means "Service Data ­ 16­bit UUID"
+	buf.data[buf.len+2] = byte(uuid)
+	buf.data[buf.len+3] = byte(uuid >> 8)
+
+	for i, b := range data {
+		buf.data[buf.len+3+uint8(i)] = b
+	}
+
+	buf.len += 4 + uint8(len(data))
+	return true
 }
 
 // ConnectionParams are used when connecting to a peripherals.
