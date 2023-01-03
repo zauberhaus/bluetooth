@@ -284,8 +284,22 @@ func (buf *rawAdvertisementPayload) HasServiceUUID(uuid UUID) bool {
 	}
 }
 
-func (buf *rawAdvertisementPayload) ServiceData() map[UUID][]byte {
-	return nil
+func (buf *rawAdvertisementPayload) ServiceData() map[uint16][]byte {
+	sData := make(map[uint16][]byte)
+	data := buf.Bytes()
+	for len(data) >= 2 {
+		fieldLength := data[0]
+		if int(fieldLength)+1 > len(data) {
+			// Invalid field length.
+			return nil
+		}
+		// If this is the manufacturer data
+		if byte(0x16) == data[1] {
+			sData[uint16(data[2])+(uint16(data[3])<<8)] = data[4 : fieldLength+1]
+		}
+		data = data[fieldLength+1:]
+	}
+	return sData
 }
 
 // ManufacturerData returns the manufacturer data in the advertisement payload.
