@@ -108,6 +108,7 @@ func getScanResultFromArgs(args *advertisement.BluetoothLEAdvertisementReceivedE
 	}
 
 	var manufacturerData map[uint16][]byte = make(map[uint16][]byte)
+	var serviceData map[uint16][]byte = make(map[uint16][]byte)
 	if winAdv, err := args.GetAdvertisement(); err == nil && winAdv != nil {
 		vector, _ := winAdv.GetManufacturerData()
 		size, _ := vector.GetSize()
@@ -117,6 +118,16 @@ func getScanResultFromArgs(args *advertisement.BluetoothLEAdvertisementReceivedE
 			companyID, _ := manData.GetCompanyId()
 			buffer, _ := manData.GetData()
 			manufacturerData[companyID] = bufferToSlice(buffer)
+		}
+
+		vector, _ := winAdv.GetServiceData()
+		size, _ := vector.GetSize()
+		for i := uint32(0); i < size; i++ {
+			element, _ := vector.GetAt(i)
+			manData := (*advertisement.BluetoothLEManufacturerData)(element)
+			companyID, _ := manData.GetCompanyId()
+			buffer, _ := manData.GetData()
+			serviceData[companyID] = bufferToSlice(buffer)
 		}
 	}
 

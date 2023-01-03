@@ -244,6 +244,22 @@ func makeScanResult(props *device.Device1Properties) ScanResult {
 	a := Address{MACAddress{MAC: addr}}
 	a.SetRandom(props.AddressType == "random")
 
+	sData := make(map[uint16][]byte)
+	for k, v := range props.ServiceData {
+		uuid, err := ParseUUID(k)
+		if err == nil {
+			id := uuid.Get16Bit()
+
+			// can be either variant or just byte value
+			switch val := v.(type) {
+			case dbus.Variant:
+				sData[id] = val.Value().([]byte)
+			case []byte:
+				sData[id] = val
+			}
+		}
+	}
+
 	mData := make(map[uint16][]byte)
 	for k, v := range props.ManufacturerData {
 		// can be either variant or just byte value
@@ -262,6 +278,7 @@ func makeScanResult(props *device.Device1Properties) ScanResult {
 			AdvertisementFields{
 				LocalName:        props.Name,
 				ServiceUUIDs:     serviceUUIDs,
+				ServiceData:      sData,
 				ManufacturerData: mData,
 			},
 		},
