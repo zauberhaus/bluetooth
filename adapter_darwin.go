@@ -131,10 +131,12 @@ func makeScanResult(prph cbgo.Peripheral, advFields cbgo.AdvFields, rssi int) Sc
 		l := len(u.UUID)
 		switch l {
 		case 2:
-			manufacturerID := uint16(u.UUID[0] + (u.UUID[1] << 8))
+			manufacturerID := uint16(u.UUID[0])
+			manufacturerID += uint16(u.UUID[1]) << 8
 			serviceData[manufacturerID] = u.Data
 		case 16:
-			manufacturerID := uint16(u.UUID[12] + (u.UUID[13] << 8))
+			manufacturerID := uint16(u.UUID[12])
+			manufacturerID += uint16(u.UUID[13]) << 8
 			serviceData[manufacturerID] = u.Data
 		}
 	}
